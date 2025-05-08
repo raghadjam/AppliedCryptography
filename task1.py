@@ -45,6 +45,15 @@ def recover_keystream(ciphertexts):
                 key[j] = c[j] ^ 0x20
     return key
 
+def keystream_to_hex(key):
+    hex_stream = []
+    for byte in key:
+        if byte is None:
+            hex_stream.append("??")
+        else:
+            hex_stream.append(f"{byte:02x}")
+    return ' '.join(hex_stream)
+
 # Decrypt the given ciphertext using the partially recovered keystream
 def decrypt_with_key(ciphertext, key):
     decrypted = []
@@ -67,15 +76,19 @@ if __name__ == "__main__":
     target_hex = ''
     for i, line in enumerate(lines):
         if line.startswith("Target Ciphertext:"):
-           if line.strip() == "Target Ciphertext:" and i + 1 < len(lines):
-            target_hex = lines[i + 1].strip()
-            break
+            if line.strip() == "Target Ciphertext:" and i + 1 < len(lines):
+                target_hex = lines[i + 1].strip()
+                break
 
-    target_ciphertext = bytearray.fromhex(target_hex)
-    if target_ciphertext is not None:
+    if target_hex:
+        target_ciphertext = bytearray.fromhex(target_hex)
         key = recover_keystream(ciphertexts)
+
+        print("\nRecovered Keystream (hex):")
+        print(keystream_to_hex(key))
+
         plaintext = decrypt_with_key(target_ciphertext, key)
-        print("Recovered partial plaintext:")
+        print("\nRecovered Partial Plaintext:")
         print(plaintext)
     else:
-        print("Target ciphertext is invalid.")
+        print("Target ciphertext not found or invalid.")
