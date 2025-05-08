@@ -13,6 +13,11 @@ def is_valid_hex(hex_str, expected_bits):
     
     return True
 
+def hex_to_bin(hex_value, bit_length):
+    return bin(int(hex_value, 16))[2:].zfill(bit_length)
+
+def bin_to_hex(bin_value):
+    return hex(int(bin_value, 2))[2:].upper().zfill(16)
 
 def main():
     print("Welcome to DES Encryption/Decryption")
@@ -33,17 +38,16 @@ def main():
         print("Invalid key. It must be 14 hex digits (56 bits).")
         sys.exit(1)
 
-    # Convert to bit lists
-    data_bits = [int(b) for b in bin(int(data, 16))[2:].zfill(64)]
-    key_bits = [int(b) for b in bin(int(key, 16))[2:].zfill(56)]
+    data_bits = hex_to_bin(data, 64)
+    key_bits = hex_to_bin(key, 56)
 
     if operation == 'E':
         cipher_bits = des_encrypt(key_bits, data_bits)
-        cipher_hex = hex(int(''.join(str(b) for b in cipher_bits), 2))[2:].upper().zfill(16)
+        cipher_hex = bin_to_hex(''.join(str(b) for b in cipher_bits))
         print(f"Ciphertext (hex): {cipher_hex}")
     else:
         plain_bits = des_decrypt(key_bits, data_bits)
-        plain_hex = hex(int(''.join(str(b) for b in plain_bits), 2))[2:].upper().zfill(16)
+        plain_hex = bin_to_hex(''.join(str(b) for b in plain_bits))
         print(f"Plaintext (hex): {plain_hex}")
 
 if __name__ == "__main__":

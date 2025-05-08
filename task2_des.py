@@ -74,13 +74,13 @@ SBOX = [
     *[[[0]*16]*4 for _ in range(7)]  # dummy S-boxes for testing
 ]
 
-# ======== Helper Functions ========
 
 def permute(bits, table):
     return [bits[i - 1] for i in table]
 
 def xor(bits1, bits2):
-    return [b1 ^ b2 for b1, b2 in zip(bits1, bits2)]
+    return [int(b1) ^ int(b2) for b1, b2 in zip(bits1, bits2)]
+
 
 def left_shift(bits, n):
     return bits[n:] + bits[:n]
@@ -102,11 +102,8 @@ def bytes_to_bitlist(data):
 def bitlist_to_bytes(bits):
     return bytes([int(''.join(str(bit) for bit in bits[i:i+8]), 2) for i in range(0, len(bits), 8)])
 
-# ======== DES Core ========
 
-def key_schedule(key):  # key is already 56 bits
-    print(key)
-    assert len(key) == 56, "Key must be 56 bits"
+def key_schedule(key):  
     C, D = key[:28], key[28:]
     subkeys = []
     for shift in SHIFT_SCHEDULE:
@@ -120,8 +117,6 @@ def f_function(R, subkey):
     return permute(sbox_substitute(xor(permute(R, E), subkey)), P)
 
 def des_encrypt(key, plaintext):
-    print(plaintext)
-    assert len(plaintext) == 64, "Plaintext must be 64 bits"
     plaintext = permute(plaintext, IP)
     subkeys = key_schedule(key)
     L, R = plaintext[:32], plaintext[32:]
@@ -130,7 +125,6 @@ def des_encrypt(key, plaintext):
     return permute(R + L, FP)
 
 def des_decrypt(key, ciphertext):
-    assert len(ciphertext) == 64, "Ciphertext must be 64 bits"
     ciphertext = permute(ciphertext, IP)
     subkeys = key_schedule(key)
     L, R = ciphertext[:32], ciphertext[32:]
