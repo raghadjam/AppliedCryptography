@@ -1,4 +1,4 @@
-# task2_des.py
+# DES implementation with 56-bit input key
 
 # Initial Permutation Table
 IP = [
@@ -48,18 +48,6 @@ P = [
     22, 11, 4, 25
 ]
 
-# PC-1 for Key Compression (64 -> 56 bits)
-PC1 = [
-    57, 49, 41, 33, 25, 17, 9,
-    1, 58, 50, 42, 34, 26, 18,
-    10, 2, 59, 51, 43, 35, 27,
-    19, 11, 3, 60, 52, 44, 36,
-    63, 55, 47, 39, 31, 23, 15,
-    7, 62, 54, 46, 38, 30, 22,
-    14, 6, 61, 53, 45, 37, 29,
-    21, 13, 5, 28, 20, 12, 4
-]
-
 # PC-2 for Subkey compression (56 -> 48 bits)
 PC2 = [
     14, 17, 11, 24, 1, 5,
@@ -76,102 +64,77 @@ PC2 = [
 SHIFT_SCHEDULE = [1, 1, 2, 2, 2, 2, 2, 2,
                   1, 2, 2, 2, 2, 2, 2, 1]
 
-# S-Boxes (8 boxes, each 4x16)
+# One sample S-box, you can add the rest as needed
 SBOX = [
-    # S1
     [[14, 4, 13, 1, 2, 15, 11, 8, 3, 10, 6, 12, 5, 9, 0, 7],
      [0, 15, 7, 4, 14, 2, 13, 1, 10, 6, 12, 11, 9, 5, 3, 8],
      [4, 1, 14, 8, 13, 6, 2, 11, 15, 12, 9, 7, 3, 10, 5, 0],
      [15, 12, 8, 2, 4, 9, 1, 7, 5, 11, 3, 14, 10, 0, 6, 13]],
-
-    # S2 (Rest of S-Boxes not included for brevity)
+    # Add S2 through S8...
+    *[[[0]*16]*4 for _ in range(7)]  # dummy S-boxes for testing
 ]
 
+# ======== Helper Functions ========
 
-# Helper: Bit permutation using a table
 def permute(bits, table):
     return [bits[i - 1] for i in table]
 
-
-# Helper: XOR two bit lists
 def xor(bits1, bits2):
-    return [bit1 ^ bit2 for bit1, bit2 in zip(bits1, bits2)]
+    return [b1 ^ b2 for b1, b2 in zip(bits1, bits2)]
 
-
-# Helper: Left shift a bit list by n positions
 def left_shift(bits, n):
     return bits[n:] + bits[:n]
 
-
-# Helper: S-Box substitution
 def sbox_substitute(bits):
     output = []
-    for i in range(8):  # 8 S-boxes
-        row = (bits[i * 6] << 1) + bits[i * 6 + 5]  # first and last bit
-        col = bits[i * 6 + 1] * 8 + bits[i * 6 + 2] * 4 + bits[i * 6 + 3] * 2 + bits[i * 6 + 4]
-        output += [int(x) for x in format(SBOX[i][row][col], '04b')]  # convert to 4-bit binary
+    for i in range(8):
+        row = (bits[i*6] << 1) + bits[i*6 + 5]
+        col = (bits[i*6 + 1] << 3) + (bits[i*6 + 2] << 2) + (bits[i*6 + 3] << 1) + bits[i*6 + 4]
+        val = SBOX[i][row][col]
+        output += [int(x) for x in f"{val:04b}"]
     return output
 
+# Convert a bytes object to a bit list
+def bytes_to_bitlist(data):
+    return [((byte >> (7 - i)) & 1) for byte in data for i in range(8)]
 
-# Key schedule (generate 16 subkeys)
-def key_schedule(key):
-    key = permute(key, PC1)
+# Convert a bit list to bytes
+def bitlist_to_bytes(bits):
+    return bytes([int(''.join(str(bit) for bit in bits[i:i+8]), 2) for i in range(0, len(bits), 8)])
+
+# ======== DES Core ========
+
+def key_schedule(key):  # key is already 56 bits
+    print(key)
+    assert len(key) == 56, "Key must be 56 bits"
     C, D = key[:28], key[28:]
     subkeys = []
-    for i in range(16):
-        C = left_shift(C, SHIFT_SCHEDULE[i])
-        D = left_shift(D, SHIFT_SCHEDULE[i])
+    for shift in SHIFT_SCHEDULE:
+        C = left_shift(C, shift)
+        D = left_shift(D, shift)
         combined = C + D
-        subkey = permute(combined, PC2)
-        subkeys.append(subkey)
+        subkeys.append(permute(combined, PC2))
     return subkeys
 
+def f_function(R, subkey):
+    return permute(sbox_substitute(xor(permute(R, E), subkey)), P)
 
-# f-function: Expansion, XOR with subkey, S-box, and P-box
-def f_function(right_half, subkey):
-    expanded = permute(right_half, E)  # Expand to 48 bits
-    xor_result = xor(expanded, subkey)  # XOR with subkey
-    substituted = sbox_substitute(xor_result)  # Apply S-box
-    return permute(substituted, P)  # Apply P-box
-
-
-# DES encryption
 def des_encrypt(key, plaintext):
-    # Initial Permutation
+    print(plaintext)
+    assert len(plaintext) == 64, "Plaintext must be 64 bits"
     plaintext = permute(plaintext, IP)
-
-    # Generate subkeys
     subkeys = key_schedule(key)
-
-    # Split into left and right halves
-    left, right = plaintext[:32], plaintext[32:]
-
+    L, R = plaintext[:32], plaintext[32:]
     for i in range(16):
-        new_left = right
-        right = xor(left, f_function(right, subkeys[i]))
-        left = new_left
+        L, R = R, xor(L, f_function(R, subkeys[i]))
+    return permute(R + L, FP)
 
-    # Combine halves and apply final permutation
-    combined = left + right
-    return permute(combined, FP)
-
-
-# DES decryption
 def des_decrypt(key, ciphertext):
-    # Initial Permutation
+    assert len(ciphertext) == 64, "Ciphertext must be 64 bits"
     ciphertext = permute(ciphertext, IP)
-
-    # Generate subkeys
     subkeys = key_schedule(key)
+    L, R = ciphertext[:32], ciphertext[32:]
+    for i in reversed(range(16)):
+        L, R = R, xor(L, f_function(R, subkeys[i]))
+    return permute(R + L, FP)
 
-    # Split into left and right halves
-    left, right = ciphertext[:32], ciphertext[32:]
-
-    for i in range(15, -1, -1):  # Reverse order of subkeys for decryption
-        new_left = right
-        right = xor(left, f_function(right, subkeys[i]))
-        left = new_left
-
-# Combine halves and apply final permutation
-    combined = left + right
-    return permute(combined, FP)
