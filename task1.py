@@ -21,8 +21,6 @@ def load_ciphertexts(filename):
                 current_cipher += line.strip()
         if current_cipher:
             ciphertexts.append(bytearray.fromhex(current_cipher))
-    ciphertexts = [c for c in ciphertexts if c is not None]
-    print(f"Loaded {len(ciphertexts)} valid ciphertexts.")
     return ciphertexts
 
 # Attempt to recover keystream using XOR pair analysis
@@ -71,26 +69,15 @@ if __name__ == "__main__":
     target_hex = ''
     for i, line in enumerate(lines):
         if line.startswith("Target Ciphertext:"):
-            hex_part = line.split(":", 1)[-1].strip()
-            if re.fullmatch(r'[0-9a-fA-F]+', hex_part):
-                target_hex = hex_part
-            else:
-                if i + 1 < len(lines):
-                    target_hex = lines[i + 1].strip()
+           if line.strip() == "Target Ciphertext:" and i + 1 < len(lines):
+            target_hex = lines[i + 1].strip()
             break
 
-    if re.fullmatch(r'[0-9a-fA-F]+', target_hex):
-        print("Target ciphertext extracted successfully.")
-        target_ciphertext = bytearray.fromhex(target_hex)
-    else:
-        print("Failed to load or convert the target ciphertext.")
-        target_ciphertext = None
-
-    # Proceed if the target ciphertext is valid
+    target_ciphertext = bytearray.fromhex(target_hex)
     if target_ciphertext is not None:
         key = recover_keystream(ciphertexts)
         plaintext = decrypt_with_key(target_ciphertext, key)
         print("Recovered partial plaintext:")
         print(plaintext)
     else:
-        print("Target ciphertext is invalid. Aborting.")
+        print("Target ciphertext is invalid.")
