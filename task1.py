@@ -27,7 +27,7 @@ def load_ciphertexts(filename):
 def recover_keystream(ciphertexts):
     max_len = max(len(c) for c in ciphertexts)
     key = [None] * max_len
-    space_hits = [ [0]*max_len for _ in range(len(ciphertexts)) ]
+    space = [ [0]*max_len for _ in range(len(ciphertexts)) ]
     for i in range(len(ciphertexts)):
         for j in range(len(ciphertexts)):
             if i == j:
@@ -37,11 +37,11 @@ def recover_keystream(ciphertexts):
             xor = strxor(c1, c2)
             for k in range(len(xor)):
                 if (65 <= xor[k] <= 90) or (97 <= xor[k] <= 122):
-                    space_hits[i][k] += 1
-    for i, hits in enumerate(space_hits):
+                    space[i][k] += 1
+    for i, hits in enumerate(space):
         c = ciphertexts[i]
         for j, count in enumerate(hits):
-            if count >= 7 and j < len(c):
+            if count >= 6 and j < len(c):
                 key[j] = c[j] ^ 0x20
     return key
 
@@ -56,7 +56,6 @@ def decrypt_with_key(ciphertext, key):
         decrypted.append(decrypted_char)
     return ''.join(decrypted)
 
-# Main process
 if __name__ == "__main__":
     # Load all ciphertexts
     ciphertexts = load_ciphertexts("given_ciphertext.txt")
@@ -65,7 +64,6 @@ if __name__ == "__main__":
     with open("target_ciphertext.txt", "r") as f:
         lines = f.readlines()
 
-    # Improved block to extract the hex string
     target_hex = ''
     for i, line in enumerate(lines):
         if line.startswith("Target Ciphertext:"):
