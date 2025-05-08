@@ -1,5 +1,3 @@
-# task2_des_avalanche_analysis.py
-
 import random
 from task2_des import des_encrypt
 
@@ -13,17 +11,21 @@ def count_differences(bin1, bin2):
     return sum(b1 != b2 for b1, b2 in zip(bin1, bin2))
 
 def random_bin_string(length):
-    return ''.join(random.choice('01') for _ in range(length))
+    bin_str = ''.join(random.choice('01') for _ in range(length))
+    assert len(bin_str) == length, f"Generated binary string is {len(bin_str)} bits instead of {length}"
+    return bin_str
 
 def avalanche_experiment(trials=10):
     print("DES Avalanche Effect Analysis ({} Trials)".format(trials))
     print("------------------------------------------------------------")
-    print("{:<5} {:<20} {:<20}".format("Trial", "# Diff Bits (Plain Flip)", "# Diff Bits (Key Flip)"))
+    print("{:<6} {:<25} {:<25}".format("Trial", "# Diff Bits (Plain Flip)", "# Diff Bits (Key Flip)"))
 
     for trial in range(1, trials + 1):
+        # Generate 64-bit plaintext and 56-bit key
         plaintext = random_bin_string(64)
+        print(plaintext)
         key = random_bin_string(56)
-
+        print(key)
         # Encrypt original
         c1 = des_encrypt(plaintext, key)
 
@@ -41,7 +43,7 @@ def avalanche_experiment(trials=10):
         diff_plain = count_differences(c1, c2_plainflip)
         diff_key = count_differences(c1, c2_keyflip)
 
-        print("{:<5} {:<20} {:<20}".format(trial, diff_plain, diff_key))
+        print("{:<6} {:<25} {:<25}".format(trial, diff_plain, diff_key))
 
     print("------------------------------------------------------------")
     print("Higher bit differences indicate strong avalanche behavior.")
