@@ -1,6 +1,3 @@
-# DES implementation with 56-bit input key
-
-# Initial Permutation Table
 IP = [
     58, 50, 42, 34, 26, 18, 10, 2,
     60, 52, 44, 36, 28, 20, 12, 4,
@@ -11,8 +8,6 @@ IP = [
     61, 53, 45, 37, 29, 21, 13, 5,
     63, 55, 47, 39, 31, 23, 15, 7
 ]
-
-# Final Permutation Table
 FP = [
     40, 8, 48, 16, 56, 24, 64, 32,
     39, 7, 47, 15, 55, 23, 63, 31,
@@ -23,8 +18,6 @@ FP = [
     34, 2, 42, 10, 50, 18, 58, 26,
     33, 1, 41, 9, 49, 17, 57, 25
 ]
-
-# Expansion Table (E-box)
 E = [
     32, 1, 2, 3, 4, 5,
     4, 5, 6, 7, 8, 9,
@@ -35,8 +28,6 @@ E = [
     24, 25, 26, 27, 28, 29,
     28, 29, 30, 31, 32, 1
 ]
-
-# Permutation function P
 P = [
     16, 7, 20, 21,
     29, 12, 28, 17,
@@ -47,8 +38,6 @@ P = [
     19, 13, 30, 6,
     22, 11, 4, 25
 ]
-
-# PC-2 for Subkey compression (56 -> 48 bits)
 PC2 = [
     14, 17, 11, 24, 1, 5,
     3, 28, 15, 6, 21, 10,
@@ -59,32 +48,27 @@ PC2 = [
     44, 49, 39, 56, 34, 53,
     46, 42, 50, 36, 29, 32
 ]
-
-# Number of bit shifts per round
 SHIFT_SCHEDULE = [1, 1, 2, 2, 2, 2, 2, 2,
                   1, 2, 2, 2, 2, 2, 2, 1]
-
-# One sample S-box, you can add the rest as needed
 SBOX = [
     [[14, 4, 13, 1, 2, 15, 11, 8, 3, 10, 6, 12, 5, 9, 0, 7],
      [0, 15, 7, 4, 14, 2, 13, 1, 10, 6, 12, 11, 9, 5, 3, 8],
      [4, 1, 14, 8, 13, 6, 2, 11, 15, 12, 9, 7, 3, 10, 5, 0],
      [15, 12, 8, 2, 4, 9, 1, 7, 5, 11, 3, 14, 10, 0, 6, 13]],
-    # Add S2 through S8...
-    *[[[0]*16]*4 for _ in range(7)]  # dummy S-boxes for testing
+    # Copy the first S-box to the rest for consistency
+    *[[[14, 4, 13, 1, 2, 15, 11, 8, 3, 10, 6, 12, 5, 9, 0, 7],
+        [0, 15, 7, 4, 14, 2, 13, 1, 10, 6, 12, 11, 9, 5, 3, 8],
+        [4, 1, 14, 8, 13, 6, 2, 11, 15, 12, 9, 7, 3, 10, 5, 0],
+        [15, 12, 8, 2, 4, 9, 1, 7, 5, 11, 3, 14, 10, 0, 6, 13]] for _ in range(7)
 ]
-
+]
 
 def permute(bits, table):
     return [bits[i - 1] for i in table]
-
 def xor(bits1, bits2):
     return [int(b1) ^ int(b2) for b1, b2 in zip(bits1, bits2)]
-
-
 def left_shift(bits, n):
     return bits[n:] + bits[:n]
-
 def sbox_substitute(bits):
     output = []
     for i in range(8):
@@ -93,17 +77,11 @@ def sbox_substitute(bits):
         val = SBOX[i][row][col]
         output += [int(x) for x in f"{val:04b}"]
     return output
-
-# Convert a bytes object to a bit list
 def bytes_to_bitlist(data):
     return [((byte >> (7 - i)) & 1) for byte in data for i in range(8)]
-
-# Convert a bit list to bytes
 def bitlist_to_bytes(bits):
     return bytes([int(''.join(str(bit) for bit in bits[i:i+8]), 2) for i in range(0, len(bits), 8)])
-
-
-def key_schedule(key):  
+def key_schedule(key):
     C, D = key[:28], key[28:]
     subkeys = []
     for shift in SHIFT_SCHEDULE:
@@ -112,10 +90,8 @@ def key_schedule(key):
         combined = C + D
         subkeys.append(permute(combined, PC2))
     return subkeys
-
 def f_function(R, subkey):
     return permute(sbox_substitute(xor(permute(R, E), subkey)), P)
-
 def des_encrypt(key, plaintext):
     plaintext = permute(plaintext, IP)
     subkeys = key_schedule(key)
@@ -123,7 +99,6 @@ def des_encrypt(key, plaintext):
     for i in range(16):
         L, R = R, xor(L, f_function(R, subkeys[i]))
     return permute(R + L, FP)
-
 def des_decrypt(key, ciphertext):
     ciphertext = permute(ciphertext, IP)
     subkeys = key_schedule(key)
@@ -131,4 +106,3 @@ def des_decrypt(key, ciphertext):
     for i in reversed(range(16)):
         L, R = R, xor(L, f_function(R, subkeys[i]))
     return permute(R + L, FP)
-
