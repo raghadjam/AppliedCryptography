@@ -26,4 +26,4 @@ Performs a Meet-in-the-Middle attack on a simplified 3DES system where both keys
 ## Contributors
 
 - [Raghad Jamhour](https://github.com/raghadjam)  
-- [Yasmin Al Shawawrh]  
+- [Yasmin Al Shawawrh](https://github.com/YasminAlShawawrh)
